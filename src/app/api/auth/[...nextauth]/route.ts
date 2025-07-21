@@ -11,16 +11,17 @@ const handler = NextAuth({
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials: { email: string; password: string } | undefined) {
         if (!credentials) throw new Error("No credentials provided");
         const client = await clientPromise;
         const db = client.db();
         const user = await db.collection("users").findOne({ email: credentials.email });
         if (!user) throw new Error("User not found");
+        if (!user.password) throw new Error("User has no password set");
         const isValid = await compare(credentials.password, user.password);
         if (!isValid) throw new Error("Invalid password");
         return {
-          id: user._id.toString(),
+          id: user._id?.toString() ?? "",
           email: user.email,
           name: user.name,
         };
@@ -36,4 +37,4 @@ const handler = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
 });
 
-export { handler as GET, handler as POST }; 
+export { handler as GET, handler as POST };
